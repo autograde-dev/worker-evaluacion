@@ -1,88 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"log"
+	"net/http"
+
+	"github.com/jhonM8a/worker-evaluacion/api"
+	"github.com/jhonM8a/worker-evaluacion/config"
+	"github.com/jhonM8a/worker-evaluacion/internal/dispatcher"
+	Job "github.com/jhonM8a/worker-evaluacion/internal/jobs"
 )
 
-type Job struct {
-	Name   string
-	Delay  time.Duration
-	Number int
-}
+func main() {
+	// Cargar configuraciones
+	cfg := config.Load()
 
-type Worker struct {
-	Id         int
-	JobQueue   chan Job
-	WorkerPool chan chan Job
-	QuitChan   chan bool
-}
+	// Crear cola de trabajos
+	jobQueue := make(chan Job.Job, cfg.MaxQueue)
 
-type Dispatcher struct {
-	WorkerPool chan chan Job
-	MaxWorkers int
-	JobQueue   chan Job
-}
+	// Inicializar el dispatcher
+	dispatcher := dispatcher.NewDispatcher(jobQueue, cfg.MaxWorkers)
+	dispatcher.Run()
 
-func NewWorker(id int, workerpool chan chan Job) *Worker {
-	return &Worker{
-		Id:         id,
-		JobQueue:   make(chan Job),
-		WorkerPool: workerpool,
-		QuitChan:   make(chan bool),
-	}
-}
+	// Configurar el servidor HTTP
+	http.HandleFunc("/fib", func(w http.ResponseWriter, r *http.Request) {
+		api.RequestHandler(w, r, jobQueue)
+	})
 
-func (w Worker) Start() {
-	go func() {
-		for {
-			w.WorkerPool <- w.JobQueue
-			select {
-			case job := <-w.JobQueue:
-				fmt.Printf("Worker con id %d Iniciado\n", w.Id)
-				fib := Fibonacci(job.Number)
-				time.Sleep(job.Delay)
-				fmt.Printf("Worket con id %d ha terminado con valor %d\n", w.Id, fib)
-
-			case <-w.QuitChan:
-				fmt.Printf("Worker %d inalidado\n", w.Id)
-			}
-		}
-	}()
-}
-
-func (w Worker) Stop() {
-	go func() {
-		w.QuitChan <- true
-	}()
-}
-
-func Fibonacci(n int) int {
-	if n <= 1 {
-		return n
-	}
-
-	return Fibonacci(n-1) + Fibonacci(n-2)
-}
-
-func NewDispatcher(jobQueue chan Job, maxWorkers int) *Dispatcher {
-	worker := make(chan chan Job, maxWorkers)
-
-	return &Dispatcher{
-		JobQueue:   jobQueue,
-		MaxWorkers: maxWorkers,
-		WorkerPool: worker,
-	}
-}
-
-func (d *Dispatcher) Distpatch() {
-	for {
-		select {
-		case job := <-d.JobQueue:
-			go func() {
-				workerJobQueue := <-d.WorkerPool
-				workerJobQueue <- job
-			}()
-		}
-	}
+	log.Fatal(http.ListenAndServe(cfg.Port, nil))
 }
