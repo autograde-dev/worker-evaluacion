@@ -1,4 +1,4 @@
-package jobFibonacci
+package job
 
 import "time"
 

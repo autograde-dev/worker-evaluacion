@@ -7,7 +7,7 @@ import (
 	"github.com/jhonM8a/worker-evaluacion/api"
 	"github.com/jhonM8a/worker-evaluacion/config"
 	"github.com/jhonM8a/worker-evaluacion/internal/dispatcher"
-	Job "github.com/jhonM8a/worker-evaluacion/internal/jobs"
+	Job "github.com/jhonM8a/worker-evaluacion/internal/job"
 )
 
 func main() {

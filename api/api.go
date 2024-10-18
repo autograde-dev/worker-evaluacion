@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	job "github.com/jhonM8a/worker-evaluacion/internal/jobs"
+	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 )
 
 func RequestHandler(w http.ResponseWriter, r *http.Request, jobQueue chan job.Job) {

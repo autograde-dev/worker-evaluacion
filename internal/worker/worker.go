@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	job "github.com/jhonM8a/worker-evaluacion/internal/jobs"
+	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 	fibonacci "github.com/jhonM8a/worker-evaluacion/pkg"
 )
 

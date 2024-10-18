@@ -1,7 +1,7 @@
 package dispatcher
 
 import (
-	job "github.com/jhonM8a/worker-evaluacion/internal/jobs"
+	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 	"github.com/jhonM8a/worker-evaluacion/internal/worker"
 )
 
