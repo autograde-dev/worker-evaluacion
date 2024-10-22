@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 )
@@ -15,25 +14,32 @@ func RequestHandler(w http.ResponseWriter, r *http.Request, jobQueue chan job.Jo
 		return
 	}
 
-	delay, err := time.ParseDuration(r.FormValue("delay"))
+	nameFileAnswer := r.FormValue("nameFileAnswer")
+	if nameFileAnswer == "" {
+		http.Error(w, "Invalid nameFileAnswer", http.StatusBadRequest)
+		return
+	}
+
+	nameFileEvaluation := r.FormValue("nameFileEvaluation")
+	if nameFileEvaluation == "" {
+		http.Error(w, "Invalid nameFileEvaluation", http.StatusBadRequest)
+		return
+	}
+
+	nameBucket := r.FormValue("nameBucket")
+	if nameFileEvaluation == "" {
+		http.Error(w, "Invalid nameBucket", http.StatusBadRequest)
+		return
+	}
+
+	idEValuation, err := strconv.Atoi(r.FormValue("idEValuation"))
 	if err != nil {
-		http.Error(w, "Invalid Delay", http.StatusBadRequest)
+		http.Error(w, "Invalid idEValuation", http.StatusBadRequest)
 		return
 	}
 
-	value, err := strconv.Atoi(r.FormValue("value"))
-	if err != nil {
-		http.Error(w, "Invalid Value", http.StatusBadRequest)
-		return
-	}
+	job := job.Job{NameFileEvaluation: nameFileEvaluation, NameFileAnswer: nameFileAnswer, NameBucket: nameBucket, IDEValuation: idEValuation}
 
-	name := r.FormValue("name")
-	if name == "" {
-		http.Error(w, "Invalid NAME", http.StatusBadRequest)
-		return
-	}
-
-	job := job.Job{Name: name, Delay: delay, Number: value}
 	jobQueue <- job
 	w.WriteHeader(http.StatusOK)
 }

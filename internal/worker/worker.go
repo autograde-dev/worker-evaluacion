@@ -2,10 +2,9 @@ package worker
 
 import (
 	"fmt"
-	"time"
 
 	job "github.com/jhonM8a/worker-evaluacion/internal/job"
-	fibonacci "github.com/jhonM8a/worker-evaluacion/pkg"
+	evaluation "github.com/jhonM8a/worker-evaluacion/pkg"
 )
 
 type Worker struct {
@@ -31,9 +30,7 @@ func (w Worker) Start() {
 			select {
 			case job := <-w.JobQueue:
 				fmt.Printf("Worker con id %d Iniciado\n", w.Id)
-				fib := fibonacci.Calculate(job.Number)
-				time.Sleep(job.Delay)
-				fmt.Printf("Worker con id %d ha terminado con valor %d\n", w.Id, fib)
+				evaluation.Evaluate(job.IDEValuation, job.NameFileAnswer, job.NameFileEvaluation, job.NameBucket)
 			case <-w.QuitChan:
 				fmt.Printf("Worker %d finalizado\n", w.Id)
 				return
