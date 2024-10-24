@@ -2,7 +2,10 @@ package pkg
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/jhonM8a/worker-evaluacion/internal/minio"
@@ -34,8 +37,23 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 		isValid = false
 	}
 
+	// Guardar el contenido de la respuesta en un archivo Python temporal
+	tmpFileName := "/tmp/tmp_answer.py"
+	err = writeToFile(tmpFileName, contentFileAnswer)
+	if err != nil {
+		fmt.Printf("Error al escribir archivo temporal: %v\n", err)
+		isValid = false
+	}
+
+	// Ejecutar el archivo Python y capturar su salida
+	resultAnswer, err := executePythonScript(tmpFileName)
+	if err != nil {
+		fmt.Printf("Error al ejecutar el archivo Python: %v\n", err)
+		isValid = false
+	}
+
 	// Comparamos los contenidos línea por línea
-	readerAnswer := bufio.NewScanner(strings.NewReader(contentFileAnswer))
+	readerAnswer := bufio.NewScanner(strings.NewReader(resultAnswer))
 	readerEvaluation := bufio.NewScanner(strings.NewReader(contentFileEvaluation))
 
 	lineNumber := 1
@@ -67,4 +85,28 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 		}
 	}
 
+}
+
+// Función para escribir contenido a un archivo temporal
+func writeToFile(fileName string, content string) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(content)
+	return err
+}
+
+// Función para ejecutar un script Python y capturar su salida
+func executePythonScript(filePath string) (string, error) {
+	cmd := exec.Command("python3", filePath)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return out.String(), nil
 }
