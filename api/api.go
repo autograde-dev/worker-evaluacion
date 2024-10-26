@@ -1,14 +1,11 @@
 package api
 
 import (
-	"net/http"
-	"strconv"
-
 	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 )
 
-func RequestHandler(w http.ResponseWriter, r *http.Request, jobQueue chan job.Job) {
-	if r.Method != "POST" {
+func RequestHandler(jobQueue chan job.Job, nameFileEvaluation string, nameFileAnswer string, nameBucket string, idEValuation int) {
+	/*if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -36,10 +33,9 @@ func RequestHandler(w http.ResponseWriter, r *http.Request, jobQueue chan job.Jo
 	if err != nil {
 		http.Error(w, "Invalid idEValuation", http.StatusBadRequest)
 		return
-	}
+	}*/
 
 	job := job.Job{NameFileEvaluation: nameFileEvaluation, NameFileAnswer: nameFileAnswer, NameBucket: nameBucket, IDEValuation: idEValuation}
 
 	jobQueue <- job
-	w.WriteHeader(http.StatusOK)
 }

@@ -6,7 +6,9 @@ import (
 	"log"
 	"sync"
 
+	"github.com/jhonM8a/worker-evaluacion/api"
 	"github.com/jhonM8a/worker-evaluacion/config"
+	job "github.com/jhonM8a/worker-evaluacion/internal/job"
 	"github.com/streadway/amqp"
 )
 
@@ -24,6 +26,13 @@ type RabbitMQ struct {
 type Message struct {
 	IdEvaluation int  `json:"idEvaluation"`
 	IsValid      bool `json:"isValid"`
+}
+
+type MessageEvaluation struct {
+	NameFileAnswer     string `json:"nameFileAnswer"`
+	NameFileEvaluation string `json:"nameFileEvaluation"`
+	NameBucket         string `json:"nameBucket"`
+	IdEvaluation       int    `json:"idEvaluation"`
 }
 
 func getInstance() (*RabbitMQ, error) {
@@ -117,6 +126,57 @@ func Enqueue(msg Message) error {
 	log.Printf("Mensaje encolado: %s", body)
 	return nil
 }
+
+// Función para escuchar mensajes de la cola "evaluation"
+func ConsumeMessages(jobQueue chan job.Job) error {
+	rmq, err := getInstance()
+	if err != nil {
+		return fmt.Errorf("error al obtener la instancia de RabbitMQ: %v", err)
+	}
+
+	q, err := rmq.channel.QueueDeclare(
+		"evaluation", // nombre de la cola de evaluación
+		false,        // durable
+		false,        // auto-delete
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("error al declarar la cola: %v", err)
+	}
+
+	msgs, err := rmq.channel.Consume(
+		q.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("error al consumir mensajes: %v", err)
+	}
+
+	go func() {
+		for d := range msgs {
+			var message MessageEvaluation
+			if err := json.Unmarshal(d.Body, &message); err != nil {
+				log.Printf("Error al deserializar mensaje: %v", err)
+				continue
+			}
+			log.Printf("Mensaje recibido: %+v", message)
+			api.RequestHandler(jobQueue, message.NameFileEvaluation, message.NameFileAnswer, message.NameBucket, message.IdEvaluation)
+			// Procesar el mensaje aquí según la lógica de negocio
+		}
+	}()
+
+	log.Println("Esperando mensajes en la cola 'evaluation'...")
+	select {} // Mantener el proceso en ejecución
+}
+
+// Función para cerrar la conexión de RabbitMQ (se usará manualmente cuando sea necesario)
 
 // Función para cerrar la conexión de RabbitMQ (se usará manualmente cuando sea necesario)
 func (r *RabbitMQ) Close() {
