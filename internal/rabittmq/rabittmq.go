@@ -108,7 +108,7 @@ func Enqueue(msg Message) error {
 	// Declarar la cola si no existe
 	q, err := rmq.channel.QueueDeclare(
 		conf.NameQueueEva, // nombre de la cola
-		false,             // durable
+		true,              // durable
 		false,             // auto-delete
 		false,             // exclusive
 		false,             // no-wait
