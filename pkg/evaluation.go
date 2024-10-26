@@ -91,27 +91,28 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 			isValid = false
 		}
 
-		if isValid {
-			fmt.Println("Los archivos son iguales.")
-		} else {
-			fmt.Println("Los archivos no son válidos.")
-		}
-
-		message := rabittmq.Message{
-			IdEvaluation: idEValuation,
-			IsValid:      isValid,
-			Student: rabittmq.Student{
-				IdEstudiante:    studentJob.IdEstudiante,
-				PrimerNombre:    studentJob.PrimerNombre,
-				SegundoNombre:   studentJob.SegundoNombre,
-				PrimerApellido:  studentJob.PrimerApellido,
-				SegundoApellido: studentJob.SegundoApellido,
-				Correo:          studentJob.Correo,
-			},
-		}
-
-		rabittmq.Enqueue(message)
 	}
+
+	if isValid {
+		fmt.Println("Los archivos son iguales.")
+	} else {
+		fmt.Println("Los archivos no son válidos.")
+	}
+
+	message := rabittmq.Message{
+		IdEvaluation: idEValuation,
+		IsValid:      isValid,
+		Student: rabittmq.Student{
+			IdEstudiante:    studentJob.IdEstudiante,
+			PrimerNombre:    studentJob.PrimerNombre,
+			SegundoNombre:   studentJob.SegundoNombre,
+			PrimerApellido:  studentJob.PrimerApellido,
+			SegundoApellido: studentJob.SegundoApellido,
+			Correo:          studentJob.Correo,
+		},
+	}
+
+	rabittmq.Enqueue(message)
 
 }
 
