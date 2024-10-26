@@ -8,21 +8,33 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/jhonM8a/worker-evaluacion/internal/job"
 	"github.com/jhonM8a/worker-evaluacion/internal/minio"
 	"github.com/jhonM8a/worker-evaluacion/internal/rabittmq"
 )
 
-func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string, nameBucket string) {
+func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string, nameBucket string, studentJob job.Student, nameFileparametes string) {
 	fmt.Printf("idEValuation %d Iniciado\n", idEValuation)
 	isValid := true
 
-	contentFileAnswer, err := minio.GetFileFromMinio(nameBucket, nameFileAnswer)
+	contentFileParametersToCode, err := minio.GetFileFromMinio(nameBucket, nameFileAnswer)
 	if err != nil {
 		fmt.Errorf("error al obtener el contenido de %s: %v", nameFileAnswer, err)
 		isValid = false
 	}
 
-	if contentFileAnswer == "" {
+	if contentFileParametersToCode == "" {
+		fmt.Println("El contenido del archivo de respuesta está vacío")
+		isValid = false
+	}
+
+	contentFileAnswerCode, err := minio.GetFileFromMinio(nameBucket, nameFileAnswer)
+	if err != nil {
+		fmt.Errorf("error al obtener el contenido de %s: %v", nameFileAnswer, err)
+		isValid = false
+	}
+
+	if contentFileAnswerCode == "" {
 		fmt.Println("El contenido del archivo de respuesta está vacío")
 		isValid = false
 	}
@@ -40,14 +52,14 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 
 	// Guardar el contenido de la respuesta en un archivo Python temporal
 	tmpFileName := "/tmp/tmp_answer.py"
-	err = writeToFile(tmpFileName, contentFileAnswer)
+	err = writeToFile(tmpFileName, contentFileAnswerCode)
 	if err != nil {
 		fmt.Printf("Error al escribir archivo temporal: %v\n", err)
 		isValid = false
 	}
 
 	// Ejecutar el archivo Python y capturar su salida
-	resultAnswer, err := executePythonScript(tmpFileName)
+	resultAnswer, err := executePythonScript(tmpFileName, contentFileParametersToCode)
 	if err != nil {
 		fmt.Printf("Error al ejecutar el archivo Python: %v\n", err)
 		isValid = false
@@ -88,6 +100,14 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 		message := rabittmq.Message{
 			IdEvaluation: idEValuation,
 			IsValid:      isValid,
+			Student: rabittmq.Student{
+				IdEstudiante:    studentJob.IdEstudiante,
+				PrimerNombre:    studentJob.PrimerNombre,
+				SegundoNombre:   studentJob.SegundoNombre,
+				PrimerApellido:  studentJob.PrimerApellido,
+				SegundoApellido: studentJob.SegundoApellido,
+				Correo:          studentJob.Correo,
+			},
 		}
 
 		rabittmq.Enqueue(message)
@@ -108,13 +128,30 @@ func writeToFile(fileName string, content string) error {
 }
 
 // Función para ejecutar un script Python y capturar su salida
-func executePythonScript(filePath string) (string, error) {
-	cmd := exec.Command("python3", filePath)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return "", err
+func executePythonScript(filePath string, paremetersCode string) (string, error) {
+	var resultBuilder strings.Builder
+
+	// Divide `paremetersCode` en líneas
+	parameters := strings.Split(paremetersCode, "\n")
+	for _, param := range parameters {
+		param = strings.TrimSpace(param)
+		if param == "" {
+			continue // Saltar líneas vacías
+		}
+
+		// Ejecuta el comando con el parámetro
+		cmd := exec.Command("python3", filePath, param)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			return "", err
+		}
+
+		// Agrega el resultado de cada ejecución a `resultBuilder`
+		resultBuilder.WriteString(out.String())
+		resultBuilder.WriteString("\n") // Para separar cada salida
 	}
-	return out.String(), nil
+
+	return resultBuilder.String(), nil
 }

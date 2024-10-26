@@ -24,15 +24,28 @@ type RabbitMQ struct {
 }
 
 type Message struct {
-	IdEvaluation int  `json:"idEvaluation"`
-	IsValid      bool `json:"isValid"`
+	IdEvaluation int     `json:"idEvaluation"`
+	IsValid      bool    `json:"isValid"`
+	Student      Student `json:"student"` // Datos del estudiante
+
+}
+
+type Student struct {
+	IdEstudiante    int    `json:"id_estudiante"`
+	PrimerNombre    string `json:"primer_nombre"`
+	SegundoNombre   string `json:"segundo_nombre"`
+	PrimerApellido  string `json:"primer_apellido"`
+	SegundoApellido string `json:"segundo_apellido"`
+	Correo          string `json:"correo"`
 }
 
 type MessageEvaluation struct {
-	NameFileAnswer     string `json:"nameFileAnswer"`
-	NameFileEvaluation string `json:"nameFileEvaluation"`
-	NameBucket         string `json:"nameBucket"`
-	IdEvaluation       int    `json:"idEvaluation"`
+	NameFileAnswer     string  `json:"nameFileAnswer"`
+	NameFileEvaluation string  `json:"nameFileEvaluation"`
+	NameFileParameters string  `json:"nameFileParameters"`
+	NameBucket         string  `json:"nameBucket"`
+	IdEvaluation       int     `json:"idEvaluation"`
+	Student            Student `json:"student"` // Datos del estudiante
 }
 
 func getInstance() (*RabbitMQ, error) {
@@ -167,7 +180,19 @@ func ConsumeMessages(jobQueue chan job.Job) error {
 				continue
 			}
 			log.Printf("Mensaje recibido: %+v", message)
-			api.RequestHandler(jobQueue, message.NameFileEvaluation, message.NameFileAnswer, message.NameBucket, message.IdEvaluation)
+			api.RequestHandler(jobQueue,
+				message.NameFileEvaluation,
+				message.NameFileAnswer,
+				message.NameBucket,
+				message.IdEvaluation,
+				message.Student.IdEstudiante,
+				message.Student.PrimerNombre,
+				message.Student.SegundoNombre,
+				message.Student.PrimerApellido,
+				message.Student.SegundoNombre,
+				message.Student.Correo,
+				message.NameFileParameters,
+			)
 			// Procesar el mensaje aquí según la lógica de negocio
 		}
 	}()

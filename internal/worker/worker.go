@@ -30,7 +30,7 @@ func (w Worker) Start() {
 			select {
 			case job := <-w.JobQueue:
 				fmt.Printf("Worker con id %d Iniciado\n", w.Id)
-				evaluation.Evaluate(job.IDEValuation, job.NameFileAnswer, job.NameFileEvaluation, job.NameBucket)
+				evaluation.Evaluate(job.IDEValuation, job.NameFileAnswer, job.NameFileEvaluation, job.NameBucket, job.Student, job.NameFileParametes)
 			case <-w.QuitChan:
 				fmt.Printf("Worker %d finalizado\n", w.Id)
 				return
