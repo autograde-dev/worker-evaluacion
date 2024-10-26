@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jhonM8a/worker-evaluacion/internal/minio"
+	"github.com/jhonM8a/worker-evaluacion/internal/rabittmq"
 )
 
 func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string, nameBucket string) {
@@ -83,6 +84,13 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 		} else {
 			fmt.Println("Los archivos no son válidos.")
 		}
+
+		message := rabittmq.Message{
+			IdEvaluation: idEValuation,
+			IsValid:      isValid,
+		}
+
+		rabittmq.Enqueue(message)
 	}
 
 }

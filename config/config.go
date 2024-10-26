@@ -13,6 +13,14 @@ type ConfigMinio struct {
 	UseSSL          bool
 }
 
+type ConfigRabbitMq struct {
+	User         string
+	Pass         string
+	Host         string
+	Port         string
+	NameQueueEva string
+}
+
 func Load() Config {
 	return Config{
 		MaxWorkers: 4,
@@ -23,9 +31,19 @@ func Load() Config {
 
 func LoadConfMinio() ConfigMinio {
 	return ConfigMinio{
-		Endpoint:        "localhost:9000",
+		Endpoint:        "host.docker.internal:9000",
 		AccessKeyID:     "wDeP32IOLrUwrlmFLwOc",
 		SecretAccessKey: "VzwSovPOwHeAe68asfwzBMjgCpbNzLvCXiUpNpCi",
 		UseSSL:          false,
+	}
+}
+
+func LoadConfRabbitMq() ConfigRabbitMq {
+	return ConfigRabbitMq{
+		User:         "admin",
+		Pass:         "admin",
+		Host:         "host.docker.internal",
+		Port:         "5673",
+		NameQueueEva: "notification",
 	}
 }
