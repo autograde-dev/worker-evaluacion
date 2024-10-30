@@ -15,16 +15,20 @@ import (
 
 func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string, nameBucket string, studentJob job.Student, nameFileparametes string) {
 	fmt.Printf("idEValuation %d Iniciado\n", idEValuation)
+	fmt.Printf("nameFileAnswer %s Iniciado\n", nameFileAnswer)
+	fmt.Printf("nameFileEvaluation %s Iniciado\n", nameFileEvaluation)
+	fmt.Printf("nameBucket %s Iniciado\n", nameBucket)
+	fmt.Printf("nameFileparametes %s Iniciado\n", nameFileparametes)
 	isValid := true
 
-	contentFileParametersToCode, err := minio.GetFileFromMinio(nameBucket, nameFileAnswer)
+	contentFileParametersToCode, err := minio.GetFileFromMinio(nameBucket, nameFileparametes)
 	if err != nil {
-		fmt.Errorf("error al obtener el contenido de %s: %v", nameFileAnswer, err)
+		fmt.Errorf("error al obtener el contenido de %s: %v", nameFileparametes, err)
 		isValid = false
 	}
 
 	if contentFileParametersToCode == "" {
-		fmt.Println("El contenido del archivo de respuesta está vacío")
+		fmt.Println("El contenido del archivo de parametros está vacío")
 		isValid = false
 	}
 
@@ -35,7 +39,7 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 	}
 
 	if contentFileAnswerCode == "" {
-		fmt.Println("El contenido del archivo de respuesta está vacío")
+		fmt.Println("El contenido del archivo de respuestas está vacío")
 		isValid = false
 	}
 
@@ -59,12 +63,14 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 	}
 
 	// Ejecutar el archivo Python y capturar su salida
+
 	resultAnswer, err := executePythonScript(tmpFileName, contentFileParametersToCode)
 	if err != nil {
 		fmt.Printf("Error al ejecutar el archivo Python: %v\n", err)
 		isValid = false
 	}
 
+	fmt.Println("resultAnswer--->" + resultAnswer)
 	// Comparamos los contenidos línea por línea
 	readerAnswer := bufio.NewScanner(strings.NewReader(resultAnswer))
 	readerEvaluation := bufio.NewScanner(strings.NewReader(contentFileEvaluation))
@@ -75,6 +81,7 @@ func Evaluate(idEValuation int, nameFileAnswer string, nameFileEvaluation string
 		for readerAnswer.Scan() && readerEvaluation.Scan() {
 			lineAnswer := readerAnswer.Text()
 			lineEvaluation := readerEvaluation.Text()
+			fmt.Println(lineAnswer + ":" + lineEvaluation)
 
 			// Si las líneas son diferentes, marcamos la bandera como falsa
 			if lineAnswer != lineEvaluation {
@@ -140,18 +147,25 @@ func executePythonScript(filePath string, paremetersCode string) (string, error)
 			continue // Saltar líneas vacías
 		}
 
+		fmt.Println("--->" + param)
+
 		// Ejecuta el comando con el parámetro
-		cmd := exec.Command("python3", filePath, param)
+		cmd := exec.Command("python", filePath, param)
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err := cmd.Run()
 		if err != nil {
+			fmt.Printf("Error compilando codigo python")
 			return "", err
 		}
 
-		// Agrega el resultado de cada ejecución a `resultBuilder`
-		resultBuilder.WriteString(out.String())
-		resultBuilder.WriteString("\n") // Para separar cada salida
+		fmt.Println("out.String()--->" + out.String())
+		output := out.String()
+		if strings.HasSuffix(output, "\n") {
+			resultBuilder.WriteString(output) // Ya incluye un salto de línea
+		} else {
+			resultBuilder.WriteString(output + "\n") // Agregar salto de línea si falta
+		}
 	}
 
 	return resultBuilder.String(), nil
